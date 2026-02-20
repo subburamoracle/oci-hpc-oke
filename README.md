@@ -181,14 +181,19 @@ helm install kueue oci://registry.k8s.io/kueue/charts/kueue --version="0.15.2" -
 #### NCCL Tests
 | Image Tag                                                                 | CUDA   |
 |---------------------------------------------------------------------------|--------|
-| iad.ocir.io/idxzjcdglx2s/nccl-tests:cuda-13.1.0-ubuntu-24.04-nccl-2.29.2-011826.1 | 13.1.0 |
-| iad.ocir.io/idxzjcdglx2s/nccl-tests:cuda-12.9.1-ubuntu-24.04-nccl-2.29.2-011826.1 | 12.9.1 |
+| iad.ocir.io/idxzjcdglx2s/nccl-tests:cuda-13.1.1-ubuntu-24.04-nccl-2.29.3-020926.1 | 13.1.1 |
+| iad.ocir.io/idxzjcdglx2s/nccl-tests:cuda-12.9.1-ubuntu-24.04-nccl-2.29.3-020926.1 | 12.9.1 |
 
 #### RCCL Tests
 | Image Tag                                                                 | ROCM   |
 |---------------------------------------------------------------------------|--------|
 | iad.ocir.io/idxzjcdglx2s/rccl-tests:rocm-7.1.1-ubuntu22.04-rccl-2.27.7-012126.1 | 7.1.1 |
 | iad.ocir.io/idxzjcdglx2s/rccl-tests:rocm-6.4.4-ubuntu22.04-rccl-2.22.3-011826.1 | 6.4.4 |
+
+#### BM.GPU.GB300.4
+```sh
+kubectl apply -f https://raw.githubusercontent.com/oracle-quickstart/oci-hpc-oke/main/manifests/nccl-tests/kueue/BM.GPU.GB300.4.yaml
+```
 
 #### BM.GPU.GB200-v3.4
 ```sh

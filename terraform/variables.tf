@@ -98,7 +98,10 @@ variable "allow_rules_lustre" {
   default = {}
   type    = any
 }
-
+variable "use_stateless_rules" {
+  type    = bool
+  default = false
+}
 
 # Bastion
 variable "create_bastion" { default = true }
@@ -182,7 +185,6 @@ variable "operator_user" {
 # STORAGE
 variable "create_fss" { default = false }
 variable "fss_ad" { default = "" }
-variable "create_bv_high" { default = false }
 variable "nvme_raid_enabled" { default = true }
 variable "nvme_raid_level" { default = 10 }
 variable "create_lustre" { default = false }
@@ -202,7 +204,7 @@ variable "install_lustre_client" {
   type    = bool
 }
 variable "lustre_client_helm_chart_version" {
-  default = "0.1.1"
+  default = "0.1.2"
   type    = string
 }
 variable "create_lustre_pv" {
@@ -253,22 +255,27 @@ variable "monitoring_namespace" {
 }
 
 variable "node_problem_detector_chart_version" {
-  default = "2.3.22"
+  default = "2.4.0"
   type    = string
 }
 
 variable "prometheus_stack_chart_version" {
-  default = "79.0.0"
+  default = "81.6.3"
   type    = string
 }
 
 variable "dcgm_exporter_chart_version" {
-  default = "4.6.0"
+  default = "4.8.1"
   type    = string
 }
 
 variable "amd_device_metrics_exporter_chart_version" {
-  default = "v1.4.0"
+  default = "v1.4.1"
+  type    = string
+}
+
+variable "cert_manager_chart_version" {
+  default = "v1.19.2"
   type    = string
 }
 
@@ -309,7 +316,7 @@ variable "monitoring_advanced_options" {
 
 # OKE Cluster Setup
 variable "cluster_name" { default = "oke-gpu-quickstart" }
-variable "kubernetes_version" { default = "v1.34.1" }
+variable "kubernetes_version" { default = "v1.34.2" }
 variable "control_plane_allowed_cidrs" { default = ["0.0.0.0/0"] }
 variable "cni_type" {
   default = "npn"
@@ -324,6 +331,11 @@ variable "max_pods_per_node" {
   default     = 110
   description = "The default maximum number of pods to deploy per node when unspecified on a pool. Absolute maximum is 110. Ignored when when cni_type != 'npn'."
   type        = number
+}
+variable "services_cidr" {
+  default     = "10.96.0.0/16"
+  description = "CIDR block for Kubernetes services."
+  type        = string
 }
 variable "preferred_kubernetes_services" {
   type        = string
@@ -342,21 +354,52 @@ variable "override_hostnames" {
   type    = bool
 }
 variable "disable_gpu_device_plugin" { default = false }
+variable "kubeproxy_mode" { default = "ipvs" }
 
 # Workers - System pool
 variable "worker_ops_ad" { default = "" }
-variable "worker_ops_pool_size" { default = 2 }
+variable "worker_ops_pool_size" { default = 3 }
 variable "worker_ops_shape" { default = "VM.Standard.E5.Flex" }
-variable "worker_ops_ocpus" { default = 8 }
-variable "worker_ops_memory" { default = 32 }
+variable "worker_ops_ocpus" { default = 4 }
+variable "worker_ops_memory" { default = 16 }
 variable "worker_ops_boot_volume_size" { default = 128 }
 variable "worker_ops_image_type" { default = "Custom" }
 variable "worker_ops_image_custom_id" { default = "" }
 variable "worker_ops_image_custom_uri" { default = "" }
-variable "worker_ops_image_use_uri" { 
-  default = false 
+variable "worker_ops_image_use_uri" {
+  default = false
   type    = bool
-} 
+}
+variable "worker_ops_max_pods_per_node" {
+  default     = 110
+  description = "Maximum number of pods per node for the system worker pool. Max is 110."
+  type        = number
+}
+variable "worker_ops_kubernetes_version" {
+  default     = null
+  description = "Kubernetes version for the system worker pool. Defaults to cluster version if not specified."
+  type        = string
+}
+variable "worker_ops_node_cycling_enabled" {
+  default     = false
+  description = "Enable node cycling for the system worker pool."
+  type        = bool
+}
+variable "worker_ops_node_cycling_max_surge" {
+  default     = "25%"
+  description = "Maximum surge for node cycling in the system worker pool."
+  type        = string
+}
+variable "worker_ops_node_cycling_max_unavailable" {
+  default     = 0
+  description = "Maximum unavailable nodes during node cycling in the system worker pool."
+  type        = number
+}
+variable "worker_ops_node_cycling_mode" {
+  default     = "instance"
+  description = "What node cycling mode will be used for nodes in the system worker pool. Accepted options are 'instance' or 'boot_volume'."
+  type        = string
+}
 
 # Workers - CPU pool
 variable "worker_cpu_enabled" { default = false }
@@ -394,6 +437,36 @@ variable "worker_cpu_image_platform_id" {
   default = null
   type    = string
 }
+variable "worker_cpu_max_pods_per_node" {
+  default     = 110
+  description = "Maximum number of pods per node for the CPU worker pool. Max is 110."
+  type        = number
+}
+variable "worker_cpu_kubernetes_version" {
+  default     = null
+  description = "Kubernetes version for the CPU worker pool. Defaults to cluster version if not specified."
+  type        = string
+}
+variable "worker_cpu_node_cycling_enabled" {
+  default     = false
+  description = "Enable node cycling for the CPU worker pool."
+  type        = bool
+}
+variable "worker_cpu_node_cycling_max_surge" {
+  default     = "25%"
+  description = "Maximum surge for node cycling in the CPU worker pool."
+  type        = string
+}
+variable "worker_cpu_node_cycling_max_unavailable" {
+  default     = 0
+  description = "Maximum unavailable nodes during node cycling in the CPU worker pool."
+  type        = number
+}
+variable "worker_cpu_node_cycling_mode" {
+  default     = "instance"
+  description = "What node cycling mode will be used for nodes in the CPU worker pool. Accepted options are 'instance' or 'boot_volume'."
+  type        = string
+}
 
 # Workers - GPU node-pool
 variable "worker_gpu_enabled" { default = false }
@@ -421,6 +494,36 @@ variable "worker_gpu_image_platform_id" {
   type    = string
 }
 variable "worker_gpu_image_id" { default = "" }
+variable "worker_gpu_max_pods_per_node" {
+  default     = 64
+  description = "Maximum number of pods per node for the GPU worker pool. Max is 110."
+  type        = number
+}
+variable "worker_gpu_kubernetes_version" {
+  default     = null
+  description = "Kubernetes version for the GPU worker pool. Defaults to cluster version if not specified."
+  type        = string
+}
+variable "worker_gpu_node_cycling_enabled" {
+  default     = false
+  description = "Enable node cycling for the GPU worker pool."
+  type        = bool
+}
+variable "worker_gpu_node_cycling_max_surge" {
+  default     = "25%"
+  description = "Maximum surge for node cycling in the GPU worker pool."
+  type        = string
+}
+variable "worker_gpu_node_cycling_max_unavailable" {
+  default     = 0
+  description = "Maximum unavailable nodes during node cycling in the GPU worker pool."
+  type        = number
+}
+variable "worker_gpu_node_cycling_mode" {
+  default     = "boot_volume"
+  description = "What node cycling mode will be used for nodes in the GPU worker pool. Accepted options are 'instance' or 'boot_volume'."
+  type        = string
+}
 
 # Workers - GPU Cluster-network
 variable "worker_rdma_enabled" { default = false }
@@ -449,6 +552,16 @@ variable "worker_rdma_image_use_uri" {
   type    = bool
 } 
 variable "worker_rdma_image_id" { default = "" }
+variable "worker_rdma_max_pods_per_node" {
+  default     = 64
+  description = "Maximum number of pods per node for the RDMA worker pool. Max is 110."
+  type        = number
+}
+variable "worker_rdma_kubernetes_version" {
+  default     = null
+  description = "Kubernetes version for the RDMA worker pool. Defaults to cluster version if not specified."
+  type        = string
+}
 
 # K8s resources deployment method
 variable "deploy_to_oke_from_orm" {
